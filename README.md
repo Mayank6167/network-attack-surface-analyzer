@@ -1,179 +1,179 @@
-# Network Attack Surface Analyzer Using Custom Nmap NSE Scripts
+# Enhancing Nmap HTTP Title Analysis Using Custom NSE Scripts
 
 **Author:** Mayank Raj
 
 ## 1. Introduction
 
-Nmap (Network Mapper) is a network exploration and security auditing tool used to discover hosts, open ports, and services running on a network. The Nmap Scripting Engine (NSE) extends Nmap's functionality through scripts written in Lua, allowing users to automate network discovery and service-related tasks.
+Nmap (Network Mapper) is an open-source network exploration and security auditing tool used to discover hosts, ports, and services on computer networks. The Nmap Scripting Engine (NSE) extends Nmap's functionality through scripts written in Lua.
 
-This project, *Network Attack Surface Analyzer*, demonstrates the development of two custom Nmap NSE scripts for HTTP and SSH service analysis. The scripts use Nmap's `shortport` library to match the relevant ports or identified services and display service information in a structured format.
+The existing `http-title.nse` script retrieves the title of a web page hosted on an HTTP service. This project uses that script as the reference for developing two enhanced HTTP analysis scripts.
 
-The project focuses on presenting protocol names, port numbers, and service names in a consistent, readable output. It demonstrates how custom NSE scripts can extend Nmap's existing scanning capabilities with project-specific reporting.
+The enhancements extend page-title reporting by adding HTTP response metadata and supporting the analysis of multiple user-specified page paths.
 
 ## 2. Project Objectives
 
-The main objectives of this project are:
+- Study the functionality of the existing Nmap `http-title.nse` script.
+- Develop two enhanced scripts based on its page-title analysis functionality.
+- Display HTTP status codes and content types alongside page titles.
+- Analyze multiple user-specified page paths in one scan.
+- Present results in a structured and readable format.
+- Practise Lua programming and Nmap NSE script execution.
 
-- To understand the structure and purpose of Nmap NSE scripts.
-- To develop custom scripts using the Lua programming language.
-- To identify HTTP and SSH services using Nmap's port and service matching functionality.
-- To display service information in a structured and readable format.
-- To understand how custom script output relates to Nmap's scan results.
-- To practise executing custom NSE scripts against authorized test systems.
+## 3. Reference Script
 
-## 3. Project Structure
+**Script:** `http-title.nse`
 
-The repository contains the following files:
-
-```text
-network-attack-surface-analyzer/
-│
-├── http-service-analyzer.nse
-├── ssh-service-analyzer.nse
-└── README.md
-```
-
-**File descriptions:**
-
-- `http-service-analyzer.nse` — Custom NSE script for displaying HTTP service information.
-- `ssh-service-analyzer.nse` — Custom NSE script for displaying SSH service information.
-- `README.md` — Project overview, script descriptions, execution instructions, and learning outcomes.
-
-## 4. Script 1: HTTP Service Analyzer
-
-**Script filename:** `http-service-analyzer.nse`
+**Official source:** https://github.com/nmap/nmap/blob/master/scripts/http-title.nse
 
 ### Description
 
-The HTTP Service Analyzer is designed to display information associated with HTTP services. It uses Nmap's `shortport.port_or_service()` function to match TCP port 80 or a service identified as HTTP.
+The original script retrieves a web page and extracts the text inside its HTML title element. It uses Nmap's HTTP library to request the page and supports URL-path customization and redirect handling.
 
-When the script's action runs, it creates a readable output containing the protocol name, port number, and service name.
+### Example Output
 
-### Main Features
+```text
+PORT   STATE SERVICE
+80/tcp open  http
+|_http-title: Example Domain
+```
 
-- Matches port 80 or the HTTP service name.
-- Displays the protocol as HTTP.
-- Displays the port number supplied by Nmap.
-- Prints the service name in a structured format.
-- Uses Lua tables to assemble the output.
+This is an illustrative example of the output format. Actual results depend on the target server.
+
+## 4. Enhancement Option 1: HTTP Response Metadata
+
+**Filename:** `http-title-metadata.nse`
+
+### Description
+
+This enhancement extends page-title analysis by displaying the HTTP status code and content type in addition to the page title.
+
+### Features
+
+- Retrieves an HTTP response using Nmap's HTTP library.
+- Displays the requested page path.
+- Reports the HTTP status code when available.
+- Reports the content type when available.
+- Extracts and displays the HTML page title.
+- Handles responses without a recognizable title.
+
+### Execution Command
+
+```bash
+nmap -p 80 --script ./http-title-metadata.nse <authorized-target>
+```
+
+To request a particular path:
+
+```bash
+nmap -p 80 --script ./http-title-metadata.nse --script-args 'http-title-metadata.url=/about' <authorized-target>
+```
 
 ### Illustrative Output
 
 ```text
-=== Network Attack Surface Analysis ===
-
-Protocol : HTTP
-Port : 80
-Service : HTTP
+PORT   STATE SERVICE
+80/tcp open  http
+| http-title-metadata:
+|   === HTTP Title Metadata ===
+|   Requested Path : /
+|   HTTP Status Code : 200
+|   Content Type : text/html
+|   Page Title : Example Domain
 ```
 
-This output illustrates the expected format. The actual port state should be verified using Nmap's scan results.
+The output above is illustrative, not a verified scan result.
 
-### Execution Command
+## 5. Enhancement Option 2: Multi-Page Title Analysis
 
-Run the following command from the directory containing the script:
-
-```bash
-nmap -Pn -p 80 --script ./http-service-analyzer.nse <authorized-target>
-```
-
-Replace `<authorized-target>` with the IP address or hostname of a system you own or have permission to test.
-
-## 5. Script 2: SSH Service Analyzer
-
-**Script filename:** `ssh-service-analyzer.nse`
+**Filename:** `http-multi-page-title.nse`
 
 ### Description
 
-The SSH Service Analyzer applies a similar reporting structure to SSH services. It uses `shortport.port_or_service()` to match TCP port 22 or a service identified as SSH.
+This enhancement extends the original single-page analysis approach to multiple user-specified page paths. It accepts a comma-separated list of paths and reports the HTTP status code and page title for each response.
 
-When the script's action runs, it produces structured information containing the protocol name, port number, and service name.
+### Features
 
-### Main Features
+- Accepts multiple page paths through an NSE script argument.
+- Requests each specified page.
+- Reports the HTTP status code for each response when available.
+- Extracts and displays each page's HTML title.
+- Handles pages without a recognizable title.
+- Presents results in a consistent format.
 
-- Matches port 22 or the SSH service name.
-- Displays the protocol as SSH.
-- Displays the port number supplied by Nmap.
-- Prints the service name in a consistent format.
-- Uses the same output structure as the HTTP Service Analyzer.
+### Execution Command
+
+```bash
+nmap -p 80 --script ./http-multi-page-title.nse --script-args 'http-multi-page-title.paths="/,/about,/contact"' <authorized-target>
+```
+
+The example requests the root page and the `/about` and `/contact` paths. Use paths appropriate for your authorized test server.
 
 ### Illustrative Output
 
 ```text
-=== Network Attack Surface Analysis ===
-
-Protocol : SSH
-Port : 22
-Service : SSH
+PORT   STATE SERVICE
+80/tcp open  http
+| http-multi-page-title:
+|   === Multi-Page HTTP Title Analysis ===
+|
+|   Requested Path : /
+|   HTTP Status Code : 200
+|   Page Title : Example Domain
+|
+|   Requested Path : /about
+|   HTTP Status Code : 200
+|   Page Title : About Us
+|
+|   Requested Path : /contact
+|   HTTP Status Code : 404
+|   Page Title : Not found
 ```
 
-This output illustrates the expected format. It is not a claim that a particular SSH server was scanned successfully.
-
-### Execution Command
-
-Run the following command from the directory containing the script:
-
-```bash
-nmap -Pn -p 22 --script ./ssh-service-analyzer.nse <authorized-target>
-```
-
-Replace `<authorized-target>` with the IP address or hostname of an authorized test system.
+This example illustrates the output format. Actual status codes and page titles depend on the server responses.
 
 ## 6. Technologies Used
 
 - **Nmap:** Network exploration and port scanning.
-- **Nmap Scripting Engine (NSE):** Framework for executing custom network scripts.
+- **Nmap Scripting Engine:** Framework for executing custom scripts.
 - **Lua:** Programming language used to implement the scripts.
-- **Nmap `shortport` library:** Used to match ports or identified service names.
-- **GitHub:** Version control and source-code hosting.
+- **Nmap HTTP library:** Used to request web pages and process HTTP responses.
+- **GitHub:** Source-code hosting and project documentation.
 
-## 7. Testing and Results
+## 7. Learning Outcomes
 
-The scripts are intended to be executed through Nmap against reachable, authorized test systems.
+Through this project, I learned:
 
-During testing, the output should be checked to confirm that the script displays the expected protocol, port number, and service name.
+- How Nmap NSE scripts are structured.
+- How to study an existing script before extending its functionality.
+- How to use Lua to develop custom NSE scripts.
+- How to retrieve HTTP responses using Nmap's HTTP library.
+- How to extract page titles from HTML.
+- How to display HTTP status codes and content types.
+- How to pass script arguments through the Nmap command line.
+- How to process multiple page paths in one script.
+- How to organize output for readability.
+- How to document and maintain scripts using GitHub.
 
-### 7.1 HTTP Service Analyzer
+## 8. Conclusion
 
-The HTTP script is configured to match port 80 or a service identified as HTTP. Its output format contains the protocol, port number, and service name.
+This project demonstrates two enhancements to the page-title analysis functionality of Nmap's existing `http-title.nse` script.
 
-### 7.2 SSH Service Analyzer
+The first enhancement adds HTTP response metadata, including the status code and content type. The second enhancement enables analysis of multiple user-specified page paths and reports the title and status code for each response.
 
-The SSH script is configured to match port 22 or a service identified as SSH. Its output format contains the protocol, port number, and service name.
+These scripts demonstrate the use of Lua, Nmap's HTTP library, NSE script arguments, and structured output. They provide practical experience in extending existing network-analysis functionality.
 
-**Testing note:** Record the actual results from your own Nmap runs here. The displayed sample outputs are illustrative. The scripts themselves do not independently verify whether a port is open, calculate security risk levels, or generate security recommendations.
+The scripts should be tested only against systems for which authorization has been granted.
 
-## 8. Learning Outcomes
+## 9. Acknowledgements
 
-Through this project, the following concepts were explored:
+I would like to thank the School of Computer Science and Engineering (SCOPE), Vellore Institute of Technology, Chennai, for providing the opportunity to learn and practise cybersecurity concepts.
 
-- Understanding the purpose and structure of Nmap NSE scripts.
-- Writing custom Lua scripts for Nmap.
-- Using the `shortport` library for port and service matching.
-- Working with Nmap's host and port information passed to script actions.
-- Formatting output using Lua tables and string concatenation.
-- Executing custom scripts through Nmap command-line options.
-- Distinguishing custom script output from Nmap's independently reported port state.
-- Organizing source code and project documentation in GitHub.
-
-## 9. Conclusion
-
-The Network Attack Surface Analyzer project demonstrates how custom Nmap NSE scripts can be developed using Lua to display structured information about HTTP and SSH services.
-
-The HTTP Service Analyzer and SSH Service Analyzer use a consistent reporting format to present protocol names, port numbers, and service names. The project provides practical experience with NSE script structure, port and service matching, command-line execution, and source-code documentation.
-
-The project can serve as a foundation for further authorized network-analysis work and more advanced service-information reporting.
-
-## 10. Acknowledgements
-
-I would like to thank the School of Computer Science and Engineering (SCOPE), Vellore Institute of Technology, Chennai, for providing the opportunity to explore cybersecurity concepts through this academic assignment.
-
-I also acknowledge the Nmap project and its contributors for developing and maintaining Nmap, the Nmap Scripting Engine, and its supporting libraries.
+I acknowledge the Nmap project and its contributors for developing and maintaining Nmap, the Nmap Scripting Engine, and its supporting libraries.
 
 Finally, I am grateful to the faculty, peers, and everyone who supported my learning and helped me complete this project.
 
-## 11. Reference
+## 10. References
 
-- **Nmap official website:** https://nmap.org/
-- **Nmap Scripting Engine documentation:** https://nmap.org/book/nse.html
-- **Reference repository used for understanding README organization:** https://github.com/mahekk-hub/nmap-nse-http-enhancements
+- Nmap official website: https://nmap.org/
+- Nmap Scripting Engine documentation: https://nmap.org/book/nse.html
+- Original HTTP title script: https://github.com/nmap/nmap/blob/master/scripts/http-title.nse
